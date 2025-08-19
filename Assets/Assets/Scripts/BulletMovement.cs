@@ -38,7 +38,7 @@ public class BulletMovement : MonoBehaviour
         lineRenderer.startWidth = 0.01f;
         lineRenderer.endWidth = 0.01f;
 
-        heading = Vector2.right;
+        heading = new Vector2(1, 0);
     }
 
     void Update()
@@ -161,7 +161,7 @@ public class BulletMovement : MonoBehaviour
 
         if (collider == null)
         {
-            transform.Translate(heading * moveSpeed * deltaTime);
+            transform.Translate(heading * moveSpeed * deltaTime, Space.World);
         }
         // handle collisions and stuff
         else
@@ -202,6 +202,11 @@ public class BulletMovement : MonoBehaviour
 
         //  renormalize just in case
         heading = heading.normalized;
+
+        //  rotate gameobject to face heading direction (flip that shit)
+        //  https://discussions.unity.com/t/rotate-2d-sprite-towards-moving-direction/94695
+        float angle = Mathf.Atan2(heading.y, heading.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
 
         // debug stuff
         if (hit.collider) Debug.DrawRay(hit.point, hit.normal * 0.4f, Color.yellow, 0.1f);
