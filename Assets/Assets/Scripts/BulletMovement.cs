@@ -2,12 +2,28 @@
 using UnityEngine.SceneManagement;
 
 enum Direction
-{ 
+{
     LEFT, RIGHT, NONE
 }
 
 public class BulletMovement : MonoBehaviour
 {
+    // readable sttate for other shit
+    public Vector2 BulletPosition => transform.position;
+    public Vector2 HeadingDir => heading;
+    public bool GrappleActive => grapplePoint.HasValue;
+    public Vector2? GrappleAnchor => grapplePoint;   // null if not latched
+    public float RopeLengthMeters => ropeLength;
+
+    // events
+    public event System.Action<Vector2, Vector2> onGrappleFired; // location direction
+    public event System.Action onGrappleLatched;
+    public event System.Action<Vector2> onGrappleMissed;  // failure Location
+    public event System.Action onGrappleReleased;
+    public event System.Action<Vector2, Vector2> onRicochet;       // point, normal
+    public event System.Action onDeath;
+
+
     [Header("Rendering Stuff")]
     private LineRenderer lineRenderer;
 
@@ -15,11 +31,13 @@ public class BulletMovement : MonoBehaviour
     [SerializeField] private float speed;
     [SerializeField] private float speedWhenGrappled;   // the bullet "feels" slightly slower when grappled so i artificially speed it up
     [SerializeField] private float radius;        // bullet "thickness"
-    [SerializeField] private float skin;       // tiny nudge off surfaces
+    [SerializeField] private float skin;       // tiny nudge off surfaces when reflecting
 
     [Header("Grapple Stuff")]
     [SerializeField] private float grappleRange = 12f;
     [SerializeField] private float ropeLength;
+    [SerializeField] private float grappleOffset = 0.5f; // used to shoot other adjacent grapples for game feel purposes
+
     private Vector2? grapplePoint;
 
     private Vector2 heading = Vector2.right;
@@ -27,13 +45,13 @@ public class BulletMovement : MonoBehaviour
     // input rollover state
     private Direction currentHeld = Direction.NONE; //  who owns the direction now
     private Direction pending = Direction.NONE; //  who takes over if still held on release
-    [SerializeField] private Direction armed = Direction.RIGHT; //  default next grapple direction
-    [SerializeField] private Direction lastArmed = Direction.RIGHT;
+    private Direction armed = Direction.RIGHT; //  default next grapple direction
+    private Direction lastArmed = Direction.RIGHT;
 
     void Start()
     {
         lineRenderer = GetComponent<LineRenderer>();
-        lineRenderer.positionCount = 2; 
+        lineRenderer.positionCount = 2;
         lineRenderer.enabled = false;
         lineRenderer.startWidth = 0.01f;
         lineRenderer.endWidth = 0.01f;
@@ -129,7 +147,7 @@ public class BulletMovement : MonoBehaviour
             ReleaseGrapple();
             FireGrapple(armed);
         }
-        
+
         lastArmed = armed;
     }
 
@@ -178,12 +196,14 @@ public class BulletMovement : MonoBehaviour
             else if (collider.CompareTag("RicochetWall"))
             {
                 Debug.Log("Ricochet");
+                onRicochet?.Invoke(hit.point, hit.normal);
                 // reflect
                 heading = Vector2.Reflect(heading, hit.normal).normalized;
             }
             else
             {
                 Debug.Log("hit a wall or something");
+                onDeath?.Invoke();
                 // you dead
                 // reload scene - need to fix up this is just for testing
                 string currentSceneName = SceneManager.GetActiveScene().name;
@@ -220,41 +240,68 @@ public class BulletMovement : MonoBehaviour
     {
         if (fireDirection == Direction.NONE)
             return;
-        // calc direction to shoot grapple
-        Vector2 aimDir = (fireDirection == Direction.LEFT)
-        ? new Vector2(-heading.y, heading.x)   // left perp (+90 deg)
-        : new Vector2(heading.y, -heading.x);  // right perp (-90 deg)
 
-        // shoot ray
-        RaycastHit2D hit = Physics2D.Raycast(transform.position, aimDir, grappleRange);
+        // base perpendicular aim (same as before)
+        Vector2 dir = (fireDirection == Direction.LEFT)
+            ? new Vector2(-heading.y, heading.x)   // +90°
+            : new Vector2(heading.y, -heading.x); // -90°
+        dir = dir.normalized;
 
-        var collider = hit.collider;
+        // three origins along heading: backward, center, forward
+        Vector2 originCenter = transform.position;
+        Vector2 originForward = originCenter + heading.normalized * grappleOffset;
+        Vector2 originBack = originCenter - heading.normalized * grappleOffset;
 
-        if (collider != null)
+        onGrappleFired?.Invoke(originCenter, dir);
+
+        // cast rays from each origin, all in the same perpendicular direction
+        RaycastHit2D hitCenter = Physics2D.Raycast(originCenter, dir, grappleRange);
+        RaycastHit2D hitForward = Physics2D.Raycast(originForward, dir, grappleRange);
+        RaycastHit2D hitBack = Physics2D.Raycast(originBack, dir, grappleRange);
+
+        // choose with a strong bias for the center ray
+        RaycastHit2D chosen = default;
+
+        if (hitCenter.collider != null && hitCenter.collider.CompareTag("GrippableWall"))
         {
-            // we hit a wall we can grapple
-            if (collider.CompareTag("GrippableWall"))
-            {
-                Debug.Log("Let's GOOOO");
-                grapplePoint = hit.point;
-                ropeLength = Vector2.Distance(transform.position, grapplePoint.Value);
-                Debug.DrawRay(transform.position, aimDir * hit.distance, Color.green, 0.15f);
-            }
-            else
-            {
-                Debug.Log("Grapple Hit Non-Grippable-Surface");
-            }
-
+            // take center immediately if valid
+            chosen = hitCenter;
         }
         else
         {
-            Debug.Log("Grapple Hit Nothing");
+            bool frontRayHit = hitForward.collider != null && hitForward.collider.CompareTag("GrippableWall");
+            bool backRayHit = hitBack.collider != null && hitBack.collider.CompareTag("GrippableWall");
+
+            if (frontRayHit && backRayHit)
+            {
+                // prefer the hit whose world hit-point is closer to the current position
+                float distanceFront = Vector2.Distance(originCenter, hitForward.point);
+                float distanceBack = Vector2.Distance(originCenter, hitBack.point);
+                chosen = (distanceFront <= distanceBack) ? hitForward : hitBack;
+            }
+            else if (frontRayHit) chosen = hitForward;
+            else if (backRayHit) chosen = hitBack;
+        }
+
+        if (chosen.collider != null)
+        {
+            grapplePoint = chosen.point;
+            ropeLength = Vector2.Distance(transform.position, grapplePoint.Value);
+            onGrappleLatched?.Invoke();
+            Debug.Log("LETS GOOO");
+        }
+        else
+        {
+            Vector2 failure = originCenter + dir * grappleRange;
+            onGrappleMissed?.Invoke(failure);
+            Debug.Log("grapple hit invalid");
         }
     }
 
     void ReleaseGrapple()
     {
         grapplePoint = null;
+        onGrappleReleased?.Invoke();
         Debug.Log("Grapple Released");
     }
 
@@ -263,8 +310,8 @@ public class BulletMovement : MonoBehaviour
         if (grapplePoint != null)
         {
             lineRenderer.enabled = true;
-            lineRenderer.SetPosition(0, transform.position);              
-            lineRenderer.SetPosition(1, grapplePoint.Value);              
+            lineRenderer.SetPosition(0, transform.position);
+            lineRenderer.SetPosition(1, grapplePoint.Value);
         }
         else
         {
@@ -273,8 +320,7 @@ public class BulletMovement : MonoBehaviour
     }
     private void drawMiscDebug()
     {
-        if(grapplePoint != null)
+        if (grapplePoint != null)
             Debug.DrawLine(transform.position, new Vector3(grapplePoint.Value.x, grapplePoint.Value.y), Color.green);
     }
 }
-

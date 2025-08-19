@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 51c9a1749a3bc1d4f8015655d0db4afc
+guid: 7d634dae1659ec44fa9e50a48d316976
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -123,9 +123,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Bullet
+  - name: BulletTrail
     originalName: 
-    pivot: {x: 0.625, y: 0}
+    pivot: {x: 0.4666667, y: -0.125}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -133,9 +133,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 20
-      height: 10
-    spriteID: df73dd4818374e8458780ddee6a8c466
+      width: 45
+      height: 8
+    spriteID: d46da71dd94c2c04e84862027422fe55
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -148,25 +148,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3318194134
+      value0: 3845655766
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: Bullet
+    name: BulletTrail
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: Bullet
+    - name: BulletTrail
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: -5
-        y: 0
-        width: 20
-        height: 10
-      spriteId: df73dd4818374e8458780ddee6a8c466
+        x: 4
+        y: 1
+        width: 45
+        height: 8
+      spriteId: d46da71dd94c2c04e84862027422fe55
     linkedCells: []
     parentIndex: -1
   platformSettings:
@@ -185,5 +185,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 15, y: 10}
-  previousTextureSize: {x: 32, y: 32}
+  canvasSize: {x: 50, y: 10}
+  previousTextureSize: {x: 64, y: 16}

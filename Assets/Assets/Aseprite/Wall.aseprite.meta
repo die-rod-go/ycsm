@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 51c9a1749a3bc1d4f8015655d0db4afc
+guid: 9ca73b05ff20d3b48a0a553bf9d68e10
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -123,9 +123,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Bullet
+  - name: Wall
     originalName: 
-    pivot: {x: 0.625, y: 0}
+    pivot: {x: 0.4848485, y: 0.25757575}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -133,9 +133,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 20
-      height: 10
-    spriteID: df73dd4818374e8458780ddee6a8c466
+      width: 66
+      height: 66
+    spriteID: 0bc20e0ea13dd4d47afb8a67212db9b4
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -148,25 +148,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3318194134
+      value0: 405905958
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: Bullet
+    name: Wall
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: Bullet
+    - name: Wall
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: -5
-        y: 0
-        width: 20
-        height: 10
-      spriteId: df73dd4818374e8458780ddee6a8c466
+        x: -16
+        y: -17
+        width: 66
+        height: 66
+      spriteId: 0bc20e0ea13dd4d47afb8a67212db9b4
     linkedCells: []
     parentIndex: -1
   platformSettings:
@@ -185,5 +185,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 15, y: 10}
-  previousTextureSize: {x: 32, y: 32}
+  canvasSize: {x: 32, y: 32}
+  previousTextureSize: {x: 128, y: 128}
